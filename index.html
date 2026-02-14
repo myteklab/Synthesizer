@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synthesizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            background: linear-gradient(135deg, #9b59b6, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Main Synth Panel */
+        .synth-panel {
+            background: linear-gradient(180deg, rgba(20, 20, 35, 0.95) 0%, rgba(15, 15, 25, 0.98) 100%);
+            border-radius: 16px;
+            border: 2px solid rgba(138, 43, 226, 0.4);
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* Control Sections Grid */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(138, 43, 226, 0.2);
+        }
+
+        .control-section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #9b59b6;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(138, 43, 226, 0.2);
+        }
+
+        /* Waveform Selector */
+        .waveform-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .wave-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .wave-btn:hover {
+            background: rgba(138, 43, 226, 0.2);
+        }
+
+        .wave-btn.active {
+            background: rgba(138, 43, 226, 0.4);
+            border-color: #9b59b6;
+            box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+        }
+
+        .wave-btn svg {
+            width: 40px;
+            height: 20px;
+        }
+
+        .wave-btn span {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaa;
+        }
+
+        .wave-btn.active span {
+            color: #fff;
+        }
+
+        /* Knob Styles */
+        .knob-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .knob {
+            --rotation: 0deg;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #2a2a3a, #1a1a2a);
+            border: 2px solid rgba(138, 43, 226, 0.4);
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 -2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .knob::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            width: 3px;
+            height: 16px;
+            margin-left: -1.5px;
+            background: linear-gradient(to bottom, #9b59b6, #6c3483);
+            border-radius: 2px;
+            box-shadow: 0 0 5px rgba(155, 89, 182, 0.5);
+            transition: transform 0.05s ease-out;
+            transform: rotate(var(--rotation));
+            transform-origin: 50% 19px;
+        }
+
+        .knob-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+        }
+
+        .knob-value {
+            font-size: 10px;
+            color: #9b59b6;
+            font-weight: bold;
+        }
+
+        /* ADSR Visual */
+        .adsr-visual {
+            height: 60px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .adsr-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Visualizer */
+        .visualizer-section {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(138, 43, 226, 0.2);
+        }
+
+        .visualizer-container {
+            display: flex;
+            gap: 15px;
+        }
+
+        .visualizer {
+            flex: 1;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .visualizer-label {
+            position: absolute;
+            top: 5px;
+            left: 8px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+        }
+
+        .visualizer canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Keyboard */
+        .keyboard-section {
+            background: linear-gradient(180deg, #1a1a2a, #0f0f1a);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(138, 43, 226, 0.2);
+        }
+
+        .keyboard-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .keyboard-hint {
+            background: rgba(138, 43, 226, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .keyboard {
+            display: flex;
+            justify-content: center;
+            height: 140px;
+            user-select: none;
+        }
+
+        .keyboard-inner {
+            position: relative;
+            display: flex;
+            gap: 2px;
+        }
+
+        .key {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.05s;
+        }
+
+        .key.white {
+            width: 45px;
+            height: 140px;
+            background: linear-gradient(180deg, #f8f8f8 0%, #e8e8e8 100%);
+            border-radius: 0 0 6px 6px;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 -3px 0 #d0d0d0;
+        }
+
+        .key.white:hover {
+            background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+        }
+
+        .key.white.active {
+            background: linear-gradient(180deg, #d8b4fe 0%, #c084fc 100%);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 -1px 0 #a855f7;
+            transform: translateY(2px);
+        }
+
+        .key.black {
+            position: absolute;
+            width: 30px;
+            height: 90px;
+            background: linear-gradient(180deg, #333 0%, #111 100%);
+            border-radius: 0 0 4px 4px;
+            z-index: 1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 -2px 0 #000;
+        }
+
+        .key.black:hover {
+            background: linear-gradient(180deg, #444 0%, #222 100%);
+        }
+
+        .key.black.active {
+            background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 -1px 0 #4c1d95;
+            transform: translateY(2px);
+        }
+
+        .key-label {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #888;
+            pointer-events: none;
+        }
+
+        .key.white .key-label {
+            color: #666;
+        }
+
+        .key.black .key-label {
+            color: #666;
+            bottom: 5px;
+            font-size: 8px;
+        }
+
+        /* Presets Section */
+        .presets-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(138, 43, 226, 0.2);
+        }
+
+        .presets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .presets-header h3 {
+            font-size: 12px;
+            color: #9b59b6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 6px;
+            padding: 10px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            background: rgba(138, 43, 226, 0.2);
+            border-color: rgba(138, 43, 226, 0.4);
+        }
+
+        .preset-btn.active {
+            background: rgba(138, 43, 226, 0.3);
+            border-color: #9b59b6;
+        }
+
+        .preset-btn .preset-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 2px;
+        }
+
+        .preset-btn .preset-desc {
+            font-size: 9px;
+            color: #888;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(138, 43, 226, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .controls-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .keyboard {
+                overflow-x: auto;
+                justify-content: flex-start;
+                padding-bottom: 10px;
+            }
+        }
+
+        /* LFO destination select */
+        .lfo-destination {
+            margin-top: 10px;
+        }
+
+        .lfo-destination select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 4px;
+            padding: 6px;
+            color: #e0e0e0;
+            font-size: 11px;
+        }
+
+        .lfo-destination label {
+            font-size: 9px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Synthesizer</h1>
+            <div class="header-controls">
+                <button class="btn btn-secondary" onclick="randomizePatch()">Randomize</button>
+            </div>
+        </div>
+
+        <!-- Main Synth Panel -->
+        <div class="synth-panel">
+            <!-- Control Sections -->
+            <div class="controls-grid">
+                <!-- Oscillator Section -->
+                <div class="control-section">
+                    <h3>Oscillator</h3>
+                    <div class="waveform-selector" id="oscWaveforms">
+                        <button class="wave-btn active" data-wave="sine" title="Sine - Pure, smooth tone">
+                            <svg viewBox="0 0 40 20">
+                                <path d="M0,10 Q10,0 20,10 T40,10" stroke="#9b59b6" fill="none" stroke-width="2"/>
+                            </svg>
+                            <span>Sine</span>
+                        </button>
+                        <button class="wave-btn" data-wave="square" title="Square - Hollow, buzzy">
+                            <svg viewBox="0 0 40 20">
+                                <path d="M0,15 L0,5 L10,5 L10,15 L20,15 L20,5 L30,5 L30,15 L40,15" stroke="#9b59b6" fill="none" stroke-width="2"/>
+                            </svg>
+                            <span>Square</span>
+                        </button>
+                        <button class="wave-btn" data-wave="sawtooth" title="Sawtooth - Bright, harsh">
+                            <svg viewBox="0 0 40 20">
+                                <path d="M0,15 L10,5 L10,15 L20,5 L20,15 L30,5 L30,15 L40,5" stroke="#9b59b6" fill="none" stroke-width="2"/>
+                            </svg>
+                            <span>Saw</span>
+                        </button>
+                        <button class="wave-btn" data-wave="triangle" title="Triangle - Mellow, soft">
+                            <svg viewBox="0 0 40 20">
+                                <path d="M0,10 L5,5 L15,15 L25,5 L35,15 L40,10" stroke="#9b59b6" fill="none" stroke-width="2"/>
+                            </svg>
+                            <span>Triangle</span>
+                        </button>
+                    </div>
+                    <div class="knob-row">
+                        <div class="knob-container">
+                            <div class="knob" id="knobDetune" data-param="detune" data-min="-100" data-max="100" data-value="0"></div>
+                            <span class="knob-label">Detune</span>
+                            <span class="knob-value" id="valueDetune">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Section -->
+                <div class="control-section">
+                    <h3>Filter</h3>
+                    <div class="knob-row">
+                        <div class="knob-container">
+                            <div class="knob" id="knobCutoff" data-param="cutoff" data-min="50" data-max="10000" data-value="2000"></div>
+                            <span class="knob-label">Cutoff</span>
+                            <span class="knob-value" id="valueCutoff">2000</span>
+                        </div>
+                        <div class="knob-container">
+                            <div class="knob" id="knobResonance" data-param="resonance" data-min="0" data-max="20" data-value="1"></div>
+                            <span class="knob-label">Resonance</span>
+                            <span class="knob-value" id="valueResonance">1.0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Envelope Section -->
+                <div class="control-section">
+                    <h3>Envelope</h3>
+                    <div class="adsr-visual">
+                        <canvas id="adsrCanvas" class="adsr-canvas"></canvas>
+                    </div>
+                    <div class="knob-row">
+                        <div class="knob-container">
+                            <div class="knob" id="knobAttack" data-param="attack" data-min="0.001" data-max="2" data-value="0.01"></div>
+                            <span class="knob-label">A</span>
+                            <span class="knob-value" id="valueAttack">0.01</span>
+                        </div>
+                        <div class="knob-container">
+                            <div class="knob" id="knobDecay" data-param="decay" data-min="0.001" data-max="2" data-value="0.2"></div>
+                            <span class="knob-label">D</span>
+                            <span class="knob-value" id="valueDecay">0.20</span>
+                        </div>
+                        <div class="knob-container">
+                            <div class="knob" id="knobSustain" data-param="sustain" data-min="0" data-max="1" data-value="0.7"></div>
+                            <span class="knob-label">S</span>
+                            <span class="knob-value" id="valueSustain">0.70</span>
+                        </div>
+                        <div class="knob-container">
+                            <div class="knob" id="knobRelease" data-param="release" data-min="0.01" data-max="3" data-value="0.3"></div>
+                            <span class="knob-label">R</span>
+                            <span class="knob-value" id="valueRelease">0.30</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LFO Section -->
+                <div class="control-section">
+                    <h3>LFO</h3>
+                    <div class="knob-row">
+                        <div class="knob-container">
+                            <div class="knob" id="knobLfoRate" data-param="lfoRate" data-min="0.1" data-max="20" data-value="5"></div>
+                            <span class="knob-label">Rate</span>
+                            <span class="knob-value" id="valueLfoRate">5.0</span>
+                        </div>
+                        <div class="knob-container">
+                            <div class="knob" id="knobLfoDepth" data-param="lfoDepth" data-min="0" data-max="100" data-value="0"></div>
+                            <span class="knob-label">Depth</span>
+                            <span class="knob-value" id="valueLfoDepth">0</span>
+                        </div>
+                    </div>
+                    <div class="lfo-destination">
+                        <label>Destination</label>
+                        <select id="lfoDestination">
+                            <option value="filter">Filter Cutoff</option>
+                            <option value="pitch">Pitch (Vibrato)</option>
+                            <option value="volume">Volume (Tremolo)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizer -->
+            <div class="visualizer-section">
+                <div class="visualizer-container">
+                    <div class="visualizer">
+                        <span class="visualizer-label">Waveform</span>
+                        <canvas id="waveformCanvas"></canvas>
+                    </div>
+                    <div class="visualizer">
+                        <span class="visualizer-label">Spectrum</span>
+                        <canvas id="spectrumCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keyboard -->
+            <div class="keyboard-section">
+                <div class="keyboard-info">
+                    <span>Click keys or use keyboard: A-K for white keys, W-U for black keys</span>
+                    <span class="keyboard-hint">Octave: <span id="currentOctave">4</span> (Z/X to change)</span>
+                </div>
+                <div class="keyboard" id="keyboard">
+                    <!-- Keys generated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="presets-section">
+                <div class="presets-header">
+                    <h3>Presets</h3>
+                </div>
+                <div class="preset-grid" id="presetGrid">
+                    <!-- Presets generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // SYNTHESIZER ENGINE
+        // ============================================
+
+        let audioContext = null;
+        let masterGain = null;
+        let analyserWaveform = null;
+        let analyserSpectrum = null;
+        let activeNotes = new Map();
+        let lfo = null;
+        let lfoGain = null;
+
+        // Current synth state
+        let synthState = {
+            oscillator: {
+                type: 'sawtooth',
+                detune: 0
+            },
+            filter: {
+                type: 'lowpass',
+                frequency: 2000,
+                resonance: 1
+            },
+            envelope: {
+                attack: 0.01,
+                decay: 0.2,
+                sustain: 0.7,
+                release: 0.3
+            },
+            lfo: {
+                type: 'sine',
+                rate: 5,
+                depth: 0,
+                destination: 'filter'
+            },
+            master: {
+                volume: 0.7,
+                glide: 0
+            }
+        };
+
+        let currentOctave = 4;
+
+        // Note frequencies (A4 = 440Hz)
+        function noteToFrequency(note, octave) {
+            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const noteIndex = notes.indexOf(note);
+            const a4 = 440;
+            const a4NoteIndex = notes.indexOf('A');
+            const a4Octave = 4;
+            const halfSteps = (octave - a4Octave) * 12 + (noteIndex - a4NoteIndex);
+            return a4 * Math.pow(2, halfSteps / 12);
+        }
+
+        // Initialize Audio Context
+        function initAudio() {
+            if (audioContext) return;
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Master gain
+            masterGain = audioContext.createGain();
+            masterGain.gain.value = synthState.master.volume;
+
+            // Analysers for visualization
+            analyserWaveform = audioContext.createAnalyser();
+            analyserWaveform.fftSize = 2048;
+
+            analyserSpectrum = audioContext.createAnalyser();
+            analyserSpectrum.fftSize = 256;
+
+            masterGain.connect(analyserWaveform);
+            analyserWaveform.connect(analyserSpectrum);
+            analyserSpectrum.connect(audioContext.destination);
+
+            // Initialize LFO
+            initLFO();
+
+            // Start visualization
+            drawVisualizers();
+        }
+
+        // Initialize LFO
+        function initLFO() {
+            lfo = audioContext.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.value = synthState.lfo.rate;
+
+            lfoGain = audioContext.createGain();
+            lfoGain.gain.value = 0;
+
+            lfo.connect(lfoGain);
+            lfo.start();
+        }
+
+        // Play a note
+        function playNote(note, octave) {
+            initAudio();
+
+            const noteKey = `${note}${octave}`;
+            if (activeNotes.has(noteKey)) return;
+
+            const frequency = noteToFrequency(note, octave);
+
+            // Create oscillator
+            const osc = audioContext.createOscillator();
+            osc.type = synthState.oscillator.type;
+            osc.frequency.value = frequency;
+            osc.detune.value = synthState.oscillator.detune;
+
+            // Create filter
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = synthState.filter.frequency;
+            filter.Q.value = synthState.filter.resonance;
+
+            // Create envelope gain
+            const envGain = audioContext.createGain();
+            envGain.gain.value = 0;
+
+            // Connect: osc -> filter -> envGain -> master
+            osc.connect(filter);
+            filter.connect(envGain);
+            envGain.connect(masterGain);
+
+            // Apply LFO based on destination
+            if (synthState.lfo.depth > 0) {
+                const lfoAmount = audioContext.createGain();
+                lfo.connect(lfoAmount);
+
+                switch (synthState.lfo.destination) {
+                    case 'filter':
+                        lfoAmount.gain.value = synthState.lfo.depth * 20;
+                        lfoAmount.connect(filter.frequency);
+                        break;
+                    case 'pitch':
+                        lfoAmount.gain.value = synthState.lfo.depth * 0.5;
+                        lfoAmount.connect(osc.detune);
+                        break;
+                    case 'volume':
+                        lfoAmount.gain.value = synthState.lfo.depth * 0.01;
+                        lfoAmount.connect(envGain.gain);
+                        break;
+                }
+            }
+
+            // Apply ADSR envelope
+            const now = audioContext.currentTime;
+            const { attack, decay, sustain, release } = synthState.envelope;
+
+            envGain.gain.setValueAtTime(0, now);
+            envGain.gain.linearRampToValueAtTime(1, now + attack);
+            envGain.gain.linearRampToValueAtTime(sustain, now + attack + decay);
+
+            osc.start();
+
+            activeNotes.set(noteKey, { osc, filter, envGain });
+
+            // Highlight key
+            const keyEl = document.querySelector(`[data-note="${note}"][data-octave="${octave}"]`);
+            if (keyEl) keyEl.classList.add('active');
+        }
+
+        // Stop a note
+        function stopNote(note, octave) {
+            const noteKey = `${note}${octave}`;
+            const noteData = activeNotes.get(noteKey);
+
+            if (!noteData) return;
+
+            const { osc, envGain } = noteData;
+            const now = audioContext.currentTime;
+            const release = synthState.envelope.release;
+
+            envGain.gain.cancelScheduledValues(now);
+            envGain.gain.setValueAtTime(envGain.gain.value, now);
+            envGain.gain.linearRampToValueAtTime(0, now + release);
+
+            osc.stop(now + release + 0.1);
+
+            activeNotes.delete(noteKey);
+
+            // Remove highlight
+            const keyEl = document.querySelector(`[data-note="${note}"][data-octave="${octave}"]`);
+            if (keyEl) keyEl.classList.remove('active');
+        }
+
+        // ============================================
+        // VISUALIZATION
+        // ============================================
+
+        function drawVisualizers() {
+            requestAnimationFrame(drawVisualizers);
+
+            if (!analyserWaveform || !analyserSpectrum) return;
+
+            // Waveform
+            const waveCanvas = document.getElementById('waveformCanvas');
+            const waveCtx = waveCanvas.getContext('2d');
+            const waveWidth = waveCanvas.width = waveCanvas.offsetWidth * 2;
+            const waveHeight = waveCanvas.height = waveCanvas.offsetHeight * 2;
+
+            const waveData = new Uint8Array(analyserWaveform.frequencyBinCount);
+            analyserWaveform.getByteTimeDomainData(waveData);
+
+            waveCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            waveCtx.fillRect(0, 0, waveWidth, waveHeight);
+
+            waveCtx.lineWidth = 2;
+            waveCtx.strokeStyle = '#9b59b6';
+            waveCtx.beginPath();
+
+            const sliceWidth = waveWidth / waveData.length;
+            let x = 0;
+
+            for (let i = 0; i < waveData.length; i++) {
+                const v = waveData[i] / 128.0;
+                const y = v * waveHeight / 2;
+
+                if (i === 0) {
+                    waveCtx.moveTo(x, y);
+                } else {
+                    waveCtx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+
+            waveCtx.lineTo(waveWidth, waveHeight / 2);
+            waveCtx.stroke();
+
+            // Spectrum
+            const specCanvas = document.getElementById('spectrumCanvas');
+            const specCtx = specCanvas.getContext('2d');
+            const specWidth = specCanvas.width = specCanvas.offsetWidth * 2;
+            const specHeight = specCanvas.height = specCanvas.offsetHeight * 2;
+
+            const specData = new Uint8Array(analyserSpectrum.frequencyBinCount);
+            analyserSpectrum.getByteFrequencyData(specData);
+
+            specCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            specCtx.fillRect(0, 0, specWidth, specHeight);
+
+            const barWidth = (specWidth / specData.length) * 2.5;
+            let barX = 0;
+
+            for (let i = 0; i < specData.length; i++) {
+                const barHeight = (specData[i] / 255) * specHeight;
+
+                const gradient = specCtx.createLinearGradient(0, specHeight, 0, specHeight - barHeight);
+                gradient.addColorStop(0, '#3498db');
+                gradient.addColorStop(1, '#9b59b6');
+
+                specCtx.fillStyle = gradient;
+                specCtx.fillRect(barX, specHeight - barHeight, barWidth - 1, barHeight);
+
+                barX += barWidth;
+            }
+        }
+
+        // Draw ADSR visualization
+        function drawADSR() {
+            const canvas = document.getElementById('adsrCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth * 2;
+            const height = canvas.height = canvas.offsetHeight * 2;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, width, height);
+
+            const { attack, decay, sustain, release } = synthState.envelope;
+            const totalTime = attack + decay + 0.5 + release; // 0.5s sustain display time
+            const padding = 10;
+            const graphWidth = width - padding * 2;
+            const graphHeight = height - padding * 2;
+
+            const attackX = padding + (attack / totalTime) * graphWidth;
+            const decayX = attackX + (decay / totalTime) * graphWidth;
+            const sustainX = decayX + (0.5 / totalTime) * graphWidth;
+            const releaseX = sustainX + (release / totalTime) * graphWidth;
+
+            const sustainY = padding + (1 - sustain) * graphHeight;
+
+            // Draw envelope
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(attackX, padding); // Attack
+            ctx.lineTo(decayX, sustainY); // Decay
+            ctx.lineTo(sustainX, sustainY); // Sustain
+            ctx.lineTo(releaseX, height - padding); // Release
+
+            ctx.strokeStyle = '#9b59b6';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Fill under curve
+            ctx.lineTo(padding, height - padding);
+            ctx.fillStyle = 'rgba(155, 89, 182, 0.2)';
+            ctx.fill();
+
+            // Labels
+            ctx.fillStyle = '#666';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('A', attackX - 5, height - padding + 15);
+            ctx.fillText('D', decayX - 5, height - padding + 15);
+            ctx.fillText('S', (decayX + sustainX) / 2, sustainY - 5);
+            ctx.fillText('R', (sustainX + releaseX) / 2, height - padding + 15);
+        }
+
+        // ============================================
+        // KEYBOARD GENERATION
+        // ============================================
+
+        function generateKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            keyboard.innerHTML = '';
+
+            // Single container for both white and black keys
+            const keyboardInner = document.createElement('div');
+            keyboardInner.className = 'keyboard-inner';
+
+            const notes = [
+                { note: 'C', black: false },
+                { note: 'C#', black: true },
+                { note: 'D', black: false },
+                { note: 'D#', black: true },
+                { note: 'E', black: false },
+                { note: 'F', black: false },
+                { note: 'F#', black: true },
+                { note: 'G', black: false },
+                { note: 'G#', black: true },
+                { note: 'A', black: false },
+                { note: 'A#', black: true },
+                { note: 'B', black: false }
+            ];
+
+            // White key width + gap
+            const whiteKeyWidth = 45;
+            const gap = 2;
+            const blackKeyWidth = 30;
+
+            let whiteKeyIndex = 0;
+            const blackKeys = []; // Store black keys to add after white keys
+
+            for (let octave = currentOctave; octave <= currentOctave + 1; octave++) {
+                notes.forEach((noteInfo, index) => {
+                    const key = document.createElement('div');
+                    key.className = `key ${noteInfo.black ? 'black' : 'white'}`;
+                    key.dataset.note = noteInfo.note;
+                    key.dataset.octave = octave;
+
+                    // Add keyboard hint for first octave
+                    if (octave === currentOctave) {
+                        const keyLabel = document.createElement('span');
+                        keyLabel.className = 'key-label';
+
+                        const keyMap = {
+                            'C': 'A', 'C#': 'W', 'D': 'S', 'D#': 'E', 'E': 'D',
+                            'F': 'F', 'F#': 'T', 'G': 'G', 'G#': 'Y', 'A': 'H',
+                            'A#': 'U', 'B': 'J'
+                        };
+                        keyLabel.textContent = keyMap[noteInfo.note] || '';
+                        key.appendChild(keyLabel);
+                    }
+
+                    // Mouse events
+                    key.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        playNote(noteInfo.note, octave);
+                    });
+
+                    key.addEventListener('mouseup', () => {
+                        stopNote(noteInfo.note, octave);
+                    });
+
+                    key.addEventListener('mouseleave', () => {
+                        stopNote(noteInfo.note, octave);
+                    });
+
+                    // Touch events
+                    key.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        playNote(noteInfo.note, octave);
+                    });
+
+                    key.addEventListener('touchend', () => {
+                        stopNote(noteInfo.note, octave);
+                    });
+
+                    if (noteInfo.black) {
+                        // Calculate black key position - centered between previous and next white keys
+                        // Position is at the right edge of previous white key minus half black key width
+                        const blackKeyOffset = whiteKeyIndex * (whiteKeyWidth + gap) - (blackKeyWidth / 2) - (gap / 2);
+                        key.style.left = blackKeyOffset + 'px';
+                        blackKeys.push(key);
+                    } else {
+                        keyboardInner.appendChild(key);
+                        whiteKeyIndex++;
+                    }
+                });
+            }
+
+            // Add black keys on top of white keys
+            blackKeys.forEach(key => keyboardInner.appendChild(key));
+
+            keyboard.appendChild(keyboardInner);
+        }
+
+        // ============================================
+        // KNOB CONTROL
+        // ============================================
+
+        let activeKnob = null;
+        let knobCenterX = 0;
+        let knobCenterY = 0;
+        let lastAngle = 0;
+
+        function initKnobs() {
+            const knobs = document.querySelectorAll('.knob');
+
+            knobs.forEach(knob => {
+                const min = parseFloat(knob.dataset.min);
+                const max = parseFloat(knob.dataset.max);
+                const value = parseFloat(knob.dataset.value);
+
+                updateKnobVisual(knob, value, min, max);
+
+                knob.addEventListener('mousedown', handleKnobMouseDown);
+                knob.addEventListener('dblclick', handleKnobDoubleClick);
+            });
+
+            // Global listeners (only added once)
+            document.addEventListener('mousemove', handleKnobMouseMove);
+            document.addEventListener('mouseup', handleKnobMouseUp);
+        }
+
+        function handleKnobMouseDown(e) {
+            e.preventDefault();
+            activeKnob = e.currentTarget;
+
+            // Get knob center position
+            const rect = activeKnob.getBoundingClientRect();
+            knobCenterX = rect.left + rect.width / 2;
+            knobCenterY = rect.top + rect.height / 2;
+
+            // Calculate current angle from current value
+            const min = parseFloat(activeKnob.dataset.min);
+            const max = parseFloat(activeKnob.dataset.max);
+            const value = parseFloat(activeKnob.dataset.value);
+            const percentage = (value - min) / (max - min);
+            lastAngle = -135 + percentage * 270;
+
+            document.body.style.cursor = 'grabbing';
+            activeKnob.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.4), inset 0 -2px 5px rgba(0, 0, 0, 0.3), 0 0 15px rgba(155, 89, 182, 0.5)';
+        }
+
+        function handleKnobMouseMove(e) {
+            if (!activeKnob) return;
+
+            const min = parseFloat(activeKnob.dataset.min);
+            const max = parseFloat(activeKnob.dataset.max);
+
+            // Calculate angle from knob center to mouse position
+            const deltaX = e.clientX - knobCenterX;
+            const deltaY = e.clientY - knobCenterY;
+
+            // atan2 gives angle in radians, convert to degrees
+            // Adjust so that straight up (12 o'clock) is 0, and angle increases clockwise
+            let angle = Math.atan2(deltaX, -deltaY) * (180 / Math.PI);
+
+            // angle is now: 0 at top, positive going clockwise, negative going counter-clockwise
+            // Range is -180 to 180
+
+            // Prevent jumping across the dead zone (bottom of knob)
+            // If we're in the dead zone (angle < -135 or > 135), stick to the nearest limit
+            if (angle > 135) {
+                // In right side of dead zone - stick to max if we were near max
+                if (lastAngle > 0) {
+                    angle = 135;
+                } else {
+                    // Coming from min side, block the jump
+                    angle = -135;
+                }
+            } else if (angle < -135) {
+                // In left side of dead zone - stick to min if we were near min
+                if (lastAngle < 0) {
+                    angle = -135;
+                } else {
+                    // Coming from max side, block the jump
+                    angle = 135;
+                }
+            }
+
+            lastAngle = angle;
+
+            // Convert angle to value
+            // -135 degrees = min value, +135 degrees = max value
+            const percentage = (angle + 135) / 270;
+            const newValue = min + percentage * (max - min);
+
+            activeKnob.dataset.value = newValue;
+            updateKnobVisual(activeKnob, newValue, min, max);
+            updateSynthParam(activeKnob.dataset.param, newValue);
+        }
+
+        function handleKnobMouseUp() {
+            if (activeKnob) {
+                activeKnob.style.boxShadow = '';
+                activeKnob = null;
+                document.body.style.cursor = '';
+            }
+        }
+
+        function handleKnobDoubleClick(e) {
+            const knob = e.currentTarget;
+            const min = parseFloat(knob.dataset.min);
+            const max = parseFloat(knob.dataset.max);
+            const defaultValue = getDefaultValue(knob.dataset.param);
+
+            knob.dataset.value = defaultValue;
+            updateKnobVisual(knob, defaultValue, min, max);
+            updateSynthParam(knob.dataset.param, defaultValue);
+        }
+
+        function updateKnobVisual(knob, value, min, max) {
+            const percentage = (value - min) / (max - min);
+            const rotation = -135 + percentage * 270; // -135 to 135 degrees
+            knob.style.setProperty('--rotation', rotation + 'deg');
+
+            // Update value display
+            const param = knob.dataset.param;
+            const valueEl = document.getElementById('value' + param.charAt(0).toUpperCase() + param.slice(1));
+            if (valueEl) {
+                if (param === 'cutoff') {
+                    valueEl.textContent = Math.round(value);
+                } else if (['attack', 'decay', 'sustain', 'release', 'lfoRate'].includes(param)) {
+                    valueEl.textContent = value.toFixed(2);
+                } else {
+                    valueEl.textContent = Math.round(value);
+                }
+            }
+        }
+
+        function getDefaultValue(param) {
+            const defaults = {
+                detune: 0,
+                cutoff: 2000,
+                resonance: 1,
+                attack: 0.01,
+                decay: 0.2,
+                sustain: 0.7,
+                release: 0.3,
+                lfoRate: 5,
+                lfoDepth: 0
+            };
+            return defaults[param] || 0;
+        }
+
+        function updateSynthParam(param, value) {
+            switch (param) {
+                case 'detune':
+                    synthState.oscillator.detune = value;
+                    activeNotes.forEach(note => note.osc.detune.value = value);
+                    break;
+                case 'cutoff':
+                    synthState.filter.frequency = value;
+                    activeNotes.forEach(note => note.filter.frequency.value = value);
+                    break;
+                case 'resonance':
+                    synthState.filter.resonance = value;
+                    activeNotes.forEach(note => note.filter.Q.value = value);
+                    break;
+                case 'attack':
+                    synthState.envelope.attack = value;
+                    drawADSR();
+                    break;
+                case 'decay':
+                    synthState.envelope.decay = value;
+                    drawADSR();
+                    break;
+                case 'sustain':
+                    synthState.envelope.sustain = value;
+                    drawADSR();
+                    break;
+                case 'release':
+                    synthState.envelope.release = value;
+                    drawADSR();
+                    break;
+                case 'lfoRate':
+                    synthState.lfo.rate = value;
+                    if (lfo) lfo.frequency.value = value;
+                    break;
+                case 'lfoDepth':
+                    synthState.lfo.depth = value;
+                    break;
+            }
+        }
+
+        // ============================================
+        // WAVEFORM SELECTOR
+        // ============================================
+
+        function initWaveformSelector() {
+            const buttons = document.querySelectorAll('#oscWaveforms .wave-btn');
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    const waveType = btn.dataset.wave;
+                    synthState.oscillator.type = waveType;
+
+                    // Update any playing notes
+                    activeNotes.forEach(note => {
+                        note.osc.type = waveType;
+                    });
+                });
+            });
+        }
+
+        // ============================================
+        // KEYBOARD INPUT
+        // ============================================
+
+        const keyboardMap = {
+            'a': { note: 'C', octaveOffset: 0 },
+            'w': { note: 'C#', octaveOffset: 0 },
+            's': { note: 'D', octaveOffset: 0 },
+            'e': { note: 'D#', octaveOffset: 0 },
+            'd': { note: 'E', octaveOffset: 0 },
+            'f': { note: 'F', octaveOffset: 0 },
+            't': { note: 'F#', octaveOffset: 0 },
+            'g': { note: 'G', octaveOffset: 0 },
+            'y': { note: 'G#', octaveOffset: 0 },
+            'h': { note: 'A', octaveOffset: 0 },
+            'u': { note: 'A#', octaveOffset: 0 },
+            'j': { note: 'B', octaveOffset: 0 },
+            'k': { note: 'C', octaveOffset: 1 },
+            'o': { note: 'C#', octaveOffset: 1 },
+            'l': { note: 'D', octaveOffset: 1 },
+            'p': { note: 'D#', octaveOffset: 1 },
+            ';': { note: 'E', octaveOffset: 1 }
+        };
+
+        const activeKeys = new Set();
+
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+
+            const key = e.key.toLowerCase();
+
+            // Octave change
+            if (key === 'z' && currentOctave > 1) {
+                currentOctave--;
+                document.getElementById('currentOctave').textContent = currentOctave;
+                generateKeyboard();
+                return;
+            }
+            if (key === 'x' && currentOctave < 6) {
+                currentOctave++;
+                document.getElementById('currentOctave').textContent = currentOctave;
+                generateKeyboard();
+                return;
+            }
+
+            // Note playing
+            if (keyboardMap[key] && !activeKeys.has(key)) {
+                activeKeys.add(key);
+                const { note, octaveOffset } = keyboardMap[key];
+                playNote(note, currentOctave + octaveOffset);
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+
+            if (keyboardMap[key]) {
+                activeKeys.delete(key);
+                const { note, octaveOffset } = keyboardMap[key];
+                stopNote(note, currentOctave + octaveOffset);
+            }
+        });
+
+        // ============================================
+        // PRESETS
+        // ============================================
+
+        const presets = [
+            {
+                name: 'Init',
+                desc: 'Clean start',
+                settings: {
+                    oscillator: { type: 'sawtooth', detune: 0 },
+                    filter: { frequency: 2000, resonance: 1 },
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0.7, release: 0.3 },
+                    lfo: { rate: 5, depth: 0, destination: 'filter' }
+                }
+            },
+            {
+                name: 'Bass',
+                desc: 'Deep & punchy',
+                settings: {
+                    oscillator: { type: 'sawtooth', detune: 0 },
+                    filter: { frequency: 400, resonance: 4 },
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.4, release: 0.2 },
+                    lfo: { rate: 0.5, depth: 10, destination: 'filter' }
+                }
+            },
+            {
+                name: 'Lead',
+                desc: 'Bright & sharp',
+                settings: {
+                    oscillator: { type: 'square', detune: 10 },
+                    filter: { frequency: 3000, resonance: 2 },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.8, release: 0.4 },
+                    lfo: { rate: 6, depth: 15, destination: 'pitch' }
+                }
+            },
+            {
+                name: 'Pad',
+                desc: 'Soft & ambient',
+                settings: {
+                    oscillator: { type: 'sine', detune: 5 },
+                    filter: { frequency: 1500, resonance: 0.5 },
+                    envelope: { attack: 0.8, decay: 0.5, sustain: 0.6, release: 1.5 },
+                    lfo: { rate: 0.3, depth: 20, destination: 'filter' }
+                }
+            },
+            {
+                name: 'Pluck',
+                desc: 'Quick & snappy',
+                settings: {
+                    oscillator: { type: 'triangle', detune: 0 },
+                    filter: { frequency: 5000, resonance: 3 },
+                    envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.2 },
+                    lfo: { rate: 0, depth: 0, destination: 'filter' }
+                }
+            },
+            {
+                name: 'Wobble',
+                desc: 'Dubstep style',
+                settings: {
+                    oscillator: { type: 'sawtooth', detune: 0 },
+                    filter: { frequency: 800, resonance: 8 },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 1, release: 0.1 },
+                    lfo: { rate: 4, depth: 80, destination: 'filter' }
+                }
+            },
+            {
+                name: 'Strings',
+                desc: 'Orchestral feel',
+                settings: {
+                    oscillator: { type: 'sawtooth', detune: 8 },
+                    filter: { frequency: 2500, resonance: 0.5 },
+                    envelope: { attack: 0.4, decay: 0.3, sustain: 0.7, release: 0.8 },
+                    lfo: { rate: 5, depth: 8, destination: 'pitch' }
+                }
+            },
+            {
+                name: 'Organ',
+                desc: 'Classic tone',
+                settings: {
+                    oscillator: { type: 'sine', detune: 0 },
+                    filter: { frequency: 8000, resonance: 0 },
+                    envelope: { attack: 0.01, decay: 0.01, sustain: 1, release: 0.1 },
+                    lfo: { rate: 6, depth: 5, destination: 'volume' }
+                }
+            }
+        ];
+
+        function generatePresets() {
+            const grid = document.getElementById('presetGrid');
+            grid.innerHTML = '';
+
+            presets.forEach((preset, index) => {
+                const btn = document.createElement('div');
+                btn.className = 'preset-btn';
+                btn.innerHTML = `
+                    <div class="preset-name">${preset.name}</div>
+                    <div class="preset-desc">${preset.desc}</div>
+                `;
+
+                btn.addEventListener('click', () => {
+                    loadPreset(preset);
+                    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+
+                grid.appendChild(btn);
+            });
+        }
+
+        function loadPreset(preset) {
+            const { settings } = preset;
+
+            // Update synth state
+            synthState.oscillator = { ...settings.oscillator };
+            synthState.filter = { type: 'lowpass', ...settings.filter };
+            synthState.envelope = { ...settings.envelope };
+            synthState.lfo = { ...settings.lfo };
+
+            // Update UI
+            // Waveform
+            document.querySelectorAll('#oscWaveforms .wave-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.wave === settings.oscillator.type);
+            });
+
+            // Knobs
+            updateKnobFromValue('knobDetune', settings.oscillator.detune);
+            updateKnobFromValue('knobCutoff', settings.filter.frequency);
+            updateKnobFromValue('knobResonance', settings.filter.resonance);
+            updateKnobFromValue('knobAttack', settings.envelope.attack);
+            updateKnobFromValue('knobDecay', settings.envelope.decay);
+            updateKnobFromValue('knobSustain', settings.envelope.sustain);
+            updateKnobFromValue('knobRelease', settings.envelope.release);
+            updateKnobFromValue('knobLfoRate', settings.lfo.rate);
+            updateKnobFromValue('knobLfoDepth', settings.lfo.depth);
+
+            // LFO destination
+            document.getElementById('lfoDestination').value = settings.lfo.destination;
+
+            // Update LFO
+            if (lfo) lfo.frequency.value = settings.lfo.rate;
+
+            // Redraw ADSR
+            drawADSR();
+
+            showToast('Loaded: ' + preset.name);
+        }
+
+        function updateKnobFromValue(knobId, value) {
+            const knob = document.getElementById(knobId);
+            if (!knob) return;
+
+            const min = parseFloat(knob.dataset.min);
+            const max = parseFloat(knob.dataset.max);
+            knob.dataset.value = value;
+            updateKnobVisual(knob, value, min, max);
+        }
+
+        // ============================================
+        // SAVE / LOAD
+        // ============================================
+
+        function getCurrentPatchData() {
+            return {
+                version: '1.0',
+                name: 'Custom Patch',
+                oscillator: synthState.oscillator,
+                filter: synthState.filter,
+                envelope: synthState.envelope,
+                lfo: synthState.lfo,
+                master: synthState.master
+            };
+        }
+
+        function loadPatchData(data) {
+            if (typeof data === 'string') {
+                data = JSON.parse(data);
+            }
+
+            if (data.oscillator) synthState.oscillator = data.oscillator;
+            if (data.filter) synthState.filter = data.filter;
+            if (data.envelope) synthState.envelope = data.envelope;
+            if (data.lfo) synthState.lfo = data.lfo;
+            if (data.master) synthState.master = data.master;
+
+            // Update all UI elements
+            document.querySelectorAll('#oscWaveforms .wave-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.wave === synthState.oscillator.type);
+            });
+
+            updateKnobFromValue('knobDetune', synthState.oscillator.detune);
+            updateKnobFromValue('knobCutoff', synthState.filter.frequency);
+            updateKnobFromValue('knobResonance', synthState.filter.resonance);
+            updateKnobFromValue('knobAttack', synthState.envelope.attack);
+            updateKnobFromValue('knobDecay', synthState.envelope.decay);
+            updateKnobFromValue('knobSustain', synthState.envelope.sustain);
+            updateKnobFromValue('knobRelease', synthState.envelope.release);
+            updateKnobFromValue('knobLfoRate', synthState.lfo.rate);
+            updateKnobFromValue('knobLfoDepth', synthState.lfo.depth);
+
+            document.getElementById('lfoDestination').value = synthState.lfo.destination || 'filter';
+
+            if (masterGain) masterGain.gain.value = synthState.master.volume;
+            if (lfo) lfo.frequency.value = synthState.lfo.rate;
+
+            drawADSR();
+        }
+
+        function randomizePatch() {
+            const waveTypes = ['sine', 'square', 'sawtooth', 'triangle'];
+            const destinations = ['filter', 'pitch', 'volume'];
+
+            const randomPatch = {
+                oscillator: {
+                    type: waveTypes[Math.floor(Math.random() * waveTypes.length)],
+                    detune: Math.random() * 40 - 20
+                },
+                filter: {
+                    frequency: 200 + Math.random() * 4000,
+                    resonance: Math.random() * 10
+                },
+                envelope: {
+                    attack: 0.001 + Math.random() * 0.5,
+                    decay: 0.05 + Math.random() * 0.5,
+                    sustain: Math.random(),
+                    release: 0.1 + Math.random() * 1
+                },
+                lfo: {
+                    rate: 0.5 + Math.random() * 10,
+                    depth: Math.random() * 50,
+                    destination: destinations[Math.floor(Math.random() * destinations.length)]
+                },
+                master: {
+                    volume: 0.7
+                }
+            };
+
+            loadPatchData(randomPatch);
+            showToast('Randomized!');
+        }
+
+        // ============================================
+        // PLATFORM EXPORTS
+        // ============================================
+
+        window.serializeProjectData = function() {
+            return getCurrentPatchData();
+        };
+
+        window.loadProjectData = loadPatchData;
+
+        // ============================================
+        // UTILITY
+        // ============================================
+
+        function showToast(message, type) {
+            type = type || 'success';
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+
+            // Set background color based on type
+            const colors = {
+                success: 'rgba(138, 43, 226, 0.9)',
+                info: 'rgba(52, 152, 219, 0.9)',
+                error: 'rgba(231, 76, 60, 0.9)'
+            };
+            toast.style.background = colors[type] || colors.success;
+
+            document.body.appendChild(toast);
+
+            setTimeout(function() { toast.remove(); }, type === 'error' ? 4000 : 2000);
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            generateKeyboard();
+            initKnobs();
+            initWaveformSelector();
+            generatePresets();
+            drawADSR();
+
+            // LFO destination change
+            document.getElementById('lfoDestination').addEventListener('change', (e) => {
+                synthState.lfo.destination = e.target.value;
+            });
+
+            // Click anywhere to initialize audio (for browsers that require user interaction)
+            document.addEventListener('click', initAudio, { once: true });
+        });
+    </script>
+</body>
+</html>
