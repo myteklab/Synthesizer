@@ -650,6 +650,7 @@
         </div>
     </div>
 
+    <script src="js/touch-bridge.js"></script>
     <script>
         // ============================================
         // SYNTHESIZER ENGINE
@@ -710,6 +711,9 @@
             if (audioContext) return;
 
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // iPad Safari can start a context made inside touchstart suspended,
+            // and it stays silent until resume() runs inside a later tap.
+            if (audioContext.state === 'suspended') audioContext.resume();
 
             // Master gain
             masterGain = audioContext.createGain();
@@ -1079,11 +1083,20 @@
 
                 knob.addEventListener('mousedown', handleKnobMouseDown);
                 knob.addEventListener('dblclick', handleKnobDoubleClick);
+                // A finger turns the knob through the same mouse handlers, and a
+                // double-tap resets it like a double-click.
+                if (window.TouchBridge) TouchBridge.attach(knob, { dblclick: true });
             });
 
             // Global listeners (only added once)
             document.addEventListener('mousemove', handleKnobMouseMove);
             document.addEventListener('mouseup', handleKnobMouseUp);
+
+            ['touchend', 'click', 'keydown'].forEach(type => {
+                document.addEventListener(type, () => {
+                    if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+                });
+            });
         }
 
         function handleKnobMouseDown(e) {
